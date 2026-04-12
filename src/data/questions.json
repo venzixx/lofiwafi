@@ -1,0 +1,22 @@
+[
+  {
+    "question": "What is our ideal weekend getaway?",
+    "options": ["Mountain Cabin", "Beach Resort", "City Exploration", "Staying in bed"]
+  },
+  {
+    "question": "Who says 'I love you' more often?",
+    "options": ["Me", "Partner", "Both equally", "Depends on the day"]
+  },
+  {
+    "question": "If we won the lottery tomorrow, what is the first purchase?",
+    "options": ["A house", "A long vacation", "Paying off all debt", "An absurdly expensive dinner"]
+  },
+  {
+    "question": "What is our favorite type of movie to watch together?",
+    "options": ["Horror/Thriller", "Romantic Comedy", "Sci-Fi/Action", "Documentaries"]
+  },
+  {
+    "question": "Who is the better cook?",
+    "options": ["Me, obviously", "The Partner", "We both burn water", "We are a Michelin-star team"]
+  }
+]
