@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { Book, Image as ImageIcon, MessageCircle, PlaySquare, Settings, CheckSquare, Heart } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 
