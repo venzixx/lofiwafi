@@ -58,15 +58,19 @@ export default function SettingsPage() {
     
     setStatusMsg({ text: "Searching...", isError: false });
 
-    // Look up the given UID
-    const { data: partnerData, error: partnerError } = await supabase
+    // Look up the given UID - cleaning it up first
+    const cleanUid = partnerUid.trim().replace('OURS-', '').toLowerCase();
+    
+    const { data: partnerList, error: partnerError } = await supabase
       .from('profiles')
       .select('id, display_name')
-      .eq('unique_identifier', partnerUid.toUpperCase())
-      .single();
+      .eq('unique_identifier', cleanUid);
+
+    const partnerData = partnerList?.[0];
 
     if (partnerError || !partnerData) {
-      setStatusMsg({ text: "Partner UID not found", isError: true });
+      console.error("Link error:", partnerError);
+      setStatusMsg({ text: "Partner ID not found. Make sure it's correct!", isError: true });
       return;
     }
 
