@@ -35,16 +35,24 @@ function HomeContent() {
   const handleGoogleLogin = async () => {
      try {
        setLoading(true);
+       setError("");
+
+       // Clear any stale local data before starting fresh
+       await supabase.auth.signOut();
+       localStorage.removeItem('supabase.auth.token');
+
        const { error } = await supabase.auth.signInWithOAuth({
           provider: 'google',
           options: {
              scopes: 'https://www.googleapis.com/auth/youtube.readonly',
-             redirectTo: `${window.location.origin}/auth/callback`
+             redirectTo: `${window.location.origin}/auth/callback`,
+             skipBrowserRedirect: false
           }
        });
        if (error) throw error;
      } catch (err: any) {
-       setError(err.message || "Google Login failed.");
+       console.error("Login redirect error:", err);
+       setError(err.message || "Google Login failed to start.");
        setLoading(false);
      }
   };
