@@ -2,17 +2,23 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { Heart, Loader2 } from "lucide-react";
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
-export default function Home() {
+function HomeContent() {
   const [loading, setLoading] = useState(false);
   const [checking, setChecking] = useState(true);
   const [error, setError] = useState("");
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
+    const urlError = searchParams.get('error_description') || searchParams.get('error');
+    if (urlError) {
+      setError(urlError === 'auth_exchange_failed' ? "Failed to verify session. Try again." : urlError);
+    }
+
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
@@ -22,7 +28,7 @@ export default function Home() {
       }
     };
     checkUser();
-  }, [router]);
+  }, [router, searchParams]);
 
   const handleGoogleLogin = async () => {
      try {
@@ -51,6 +57,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+      {/* ... previous content ... */}
       <motion.div 
         animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
         transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
@@ -60,14 +67,12 @@ export default function Home() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, ease: "easeOut" }}
         className="w-full max-w-md liquid-glass-card p-8 relative z-10"
       >
         <div className="flex flex-col items-center text-center space-y-8">
           <motion.div 
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            transition={{ delay: 0.3, type: "spring", stiffness: 100 }}
             className="w-16 h-16 rounded-full liquid-glass flex items-center justify-center"
           >
             <Heart className="w-8 h-8 text-white/80" fill="currentColor" />
@@ -90,7 +95,7 @@ export default function Home() {
              <button
                  onClick={handleGoogleLogin}
                  disabled={loading}
-                 className="w-full flex items-center justify-center space-x-3 py-4 bg-white/5 hover:bg-white/10 disabled:opacity-50 text-white rounded-2xl border border-white/10 transition-all duration-300 transform active:scale-95 shadow-lg"
+                 className="w-full flex items-center justify-center space-x-3 py-4 bg-white/5 hover:bg-white/10 text-white rounded-2xl border border-white/10 transition-all duration-300 transform active:scale-95 shadow-lg"
              >
                  {loading ? (
                     <span className="tracking-widest uppercase text-sm font-medium animate-pulse">Routing...</span>
@@ -106,12 +111,18 @@ export default function Home() {
                     </>
                  )}
              </button>
-             <p className="text-[10px] text-white/30 text-center mt-6 uppercase tracking-widest">
-               Native Session Verification Required
-             </p>
           </div>
         </div>
       </motion.div>
     </div>
   );
 }
+
+export default function Home() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[#050505]"><Loader2 className="w-8 h-8 text-white/20 animate-spin" /></div>}>
+      <HomeContent />
+    </Suspense>
+  );
+}
+
