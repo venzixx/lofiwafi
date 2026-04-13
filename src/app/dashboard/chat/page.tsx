@@ -71,6 +71,11 @@ export default function ChatPage() {
     }]);
   };
 
+  const handleDeleteMessage = async (id: string) => {
+    if (!confirm("Remove this message?")) return;
+    await supabase.from('chat_messages').delete().eq('id', id);
+  };
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'photo' | 'video' | 'one_time_photo') => {
      if (!e.target.files || e.target.files.length === 0 || !user || !partnerId) return;
      const file = e.target.files[0];
@@ -160,6 +165,15 @@ export default function ChatPage() {
                 )}
                 {msg.type === "video" && msg.content.includes("youtube.com") && (
                    <iframe src={msg.content} className="w-full aspect-video rounded-xl" frameBorder={0} allowFullScreen />
+                )}
+
+                {isMe && (
+                  <button 
+                    onClick={() => handleDeleteMessage(msg.id)}
+                    className="absolute top-2 right-2 p-1.5 bg-black/40 text-white/20 hover:text-rose-500 rounded-lg opacity-0 group-hover:opacity-100 transition-all backdrop-blur-sm border border-white/5"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
                 )}
               </div>
             </motion.div>

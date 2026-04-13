@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Upload, Loader2, Image as ImageIcon, X } from "lucide-react";
+import { Upload, Loader2, Image as ImageIcon, X, Trash2 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 
@@ -9,6 +9,7 @@ export default function GalleryPage() {
   const [photos, setPhotos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -25,6 +26,42 @@ export default function GalleryPage() {
     
     if (!error) setPhotos(data || []);
     setLoading(false);
+  };
+
+  const handleDeletePhoto = async (photo: any) => {
+    if (!confirm("Are you sure you want to delete this memory?")) return;
+    
+    setDeleting(true);
+    try {
+      // 1. Extract file path from URL
+      // URL format: .../storage/v1/object/public/media/gallery/filename.ext
+      const urlParts = photo.url.split('/');
+      const fileName = urlParts[urlParts.length - 1];
+      const filePath = `gallery/${fileName}`;
+
+      // 2. Delete from Storage
+      const { error: storageError } = await supabase.storage
+        .from('media')
+        .remove([filePath]);
+
+      if (storageError) console.error("Storage delete error:", storageError);
+
+      // 3. Delete from DB
+      const { error: dbError } = await supabase
+        .from('gallery_images')
+        .delete()
+        .eq('id', photo.id);
+
+      if (dbError) throw dbError;
+
+      setSelectedPhoto(null);
+      fetchPhotos();
+    } catch (err) {
+      console.error(err);
+      alert("Failed to delete photo.");
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -146,9 +183,21 @@ export default function GalleryPage() {
             className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-12 bg-black/95 backdrop-blur-3xl"
             onClick={() => setSelectedPhoto(null)}
           >
-            <button className="absolute top-8 right-8 z-[210] p-3 text-white/60 hover:text-white transition-colors">
-              <X className="w-8 h-8" />
-            </button>
+            <div className="absolute top-8 right-8 z-[210] flex gap-4">
+               <button 
+                 onClick={() => handleDeletePhoto(selectedPhoto)}
+                 disabled={deleting}
+                 className="p-3 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-full transition-all active:scale-95 disabled:opacity-50"
+               >
+                 {deleting ? <Loader2 className="w-6 h-6 animate-spin" /> : <Trash2 className="w-6 h-6" />}
+               </button>
+               <button 
+                 onClick={() => setSelectedPhoto(null)}
+                 className="p-3 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white rounded-full transition-all"
+               >
+                 <X className="w-6 h-6" />
+               </button>
+            </div>
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}

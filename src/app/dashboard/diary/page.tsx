@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Lock, Globe, BookOpen, X, Send, Loader2 } from "lucide-react";
+import { Plus, Lock, Globe, BookOpen, X, Send, Loader2, Trash2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 
@@ -16,6 +16,7 @@ export default function DiaryPage() {
   const [newContent, setNewContent] = useState("");
   const [isShared, setIsShared] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -40,12 +41,27 @@ export default function DiaryPage() {
       .from('diary_entries')
       .select('*')
       .order('created_at', { ascending: false });
-
-    // Explicitly fetching partner's shared entries manually if RLS select isn't enough
-    // Actually our RLS policy handles this: (is_shared = true AND auth.uid() IN (SELECT partner_id FROM public.profiles WHERE id = user_id))
     
     setEntries(entriesData || []);
     setLoading(false);
+  };
+
+  const handleDeleteEntry = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    if (!confirm("Are you sure you want to delete this memory?")) return;
+
+    setIsDeleting(id);
+    const { error } = await supabase
+      .from('diary_entries')
+      .delete()
+      .eq('id', id);
+
+    if (!error) {
+      setEntries((prev) => prev.filter((entry) => entry.id !== id));
+    } else {
+      alert("Failed to delete entry.");
+    }
+    setIsDeleting(null);
   };
 
   const calculateTimeTogether = () => {
@@ -140,12 +156,13 @@ export default function DiaryPage() {
               className="liquid-glass-card p-6 rounded-3xl space-y-4 cursor-pointer group hover:bg-white/5 transition-all"
             >
               <div className="flex justify-between items-start">
-                <h3 className="text-xl font-light text-white tracking-wide group-hover:text-rose-200 transition-colors">
-                  {entry.title || "Untitled Entry"}
-                </h3>
-                <div className="flex items-center space-x-3 text-[10px] text-white/40 tracking-widest uppercase font-medium">
-                  <span>{new Date(entry.created_at).toLocaleDateString()}</span>
-                  <div className="flex items-center gap-1 bg-white/5 px-2 py-1 rounded-full">
+                <div className="flex-1">
+                  <h3 className="text-xl font-light text-white tracking-wide group-hover:text-rose-200 transition-colors">
+                    {entry.title || "Untitled Entry"}
+                  </h3>
+                </div>
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center gap-1 bg-white/5 px-2 py-1 rounded-full text-[10px] text-white/40 tracking-widest uppercase font-medium">
                     {entry.is_shared ? (
                       <Globe className="w-3 h-3 text-rose-400" />
                     ) : (
@@ -153,7 +170,19 @@ export default function DiaryPage() {
                     )}
                     <span>{entry.is_shared ? 'Shared' : 'Private'}</span>
                   </div>
+                  <button 
+                    onClick={(e) => handleDeleteEntry(e, entry.id)}
+                    disabled={isDeleting === entry.id}
+                    className="p-2 text-white/20 hover:text-rose-500 transition-colors rounded-lg hover:bg-rose-500/10"
+                  >
+                    {isDeleting === entry.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                  </button>
                 </div>
+              </div>
+              <div className="flex items-center gap-2 text-[8px] text-white/20 tracking-[0.2em] font-medium uppercase">
+                 <span>{new Date(entry.created_at).toLocaleDateString()}</span>
+                 <span>•</span>
+                 <span>{new Date(entry.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
               </div>
               <p className="text-white/70 text-sm leading-relaxed font-light">
                 {entry.content}

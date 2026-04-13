@@ -20,7 +20,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         router.push('/');
         return;
       }
-      setLoading(false);
+      // Failsafe: Ensure profile exists
+      const { data: profileExists } = await supabase.from('profiles').select('id').eq('id', user.id).single();
+      if (!profileExists) {
+        await supabase.from('profiles').insert([{ 
+          id: user.id, 
+          email: user.email,
+          display_name: user.user_metadata.full_name || user.email?.split('@')[0]
+        }]);
+      }
 
       const { data } = await supabase.from('profiles').select('relationship_start_date').eq('id', user.id).single();
       if (data?.relationship_start_date) {
@@ -33,6 +41,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         const finalDays = (days % 365) % 30;
         setAnniversary(`${years}Y ${months}M ${finalDays}D`);
       }
+      setLoading(false);
     };
     fetchUserData();
   }, [router]);
