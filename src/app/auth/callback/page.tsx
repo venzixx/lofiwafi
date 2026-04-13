@@ -17,26 +17,35 @@ function AuthCallbackContent() {
         const code = searchParams.get('code');
         
         if (code) {
-          // PKCE Flow: Explicitly exchange the code for a session
+          // PKCE Flow: Attempt to exchange code for session
           const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-          if (exchangeError) throw exchangeError;
+          
+          // If exchange fails, don't throw immediately. 
+          // Check if detectSessionInUrl already worked or if a session exists.
+          if (exchangeError) {
+            console.warn("Code exchange failed, checking for existing session...", exchangeError.message);
+          }
         }
 
-        // Check if we have a session now (works for both PKCE and Implicit hash)
+        // Final check: Do we have a valid session?
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        if (sessionError) throw sessionError;
         
         if (session) {
+          console.log("Session verified, redirecting...");
           router.push("/dashboard/youtube");
         } else {
-          // If no code and no session, we might be in the middle of a hash processing
-          const timeout = setTimeout(() => {
-            setError("Authentication timed out. Please try to login again.");
-          }, 5000);
-          return () => clearTimeout(timeout);
+          // If zero results after 2 seconds, then show error
+          setTimeout(async () => {
+             const { data: { session: retrySession } } = await supabase.auth.getSession();
+             if (retrySession) {
+                router.push("/dashboard/youtube");
+             } else {
+                setError("Authentication state not found. Please try logging in again.");
+             }
+          }, 2000);
         }
       } catch (err: any) {
-        console.error("Auth error:", err);
+        console.error("Auth callback critical error:", err);
         setError(err.message || "Failed to initialize session.");
       }
     };
