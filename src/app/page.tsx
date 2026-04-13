@@ -1,13 +1,28 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { Heart } from "lucide-react";
-import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Heart, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
 export default function Home() {
   const [loading, setLoading] = useState(false);
+  const [checking, setChecking] = useState(true);
   const [error, setError] = useState("");
+  const router = useRouter();
+
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        router.push('/dashboard/youtube');
+      } else {
+        setChecking(false);
+      }
+    };
+    checkUser();
+  }, [router]);
 
   const handleGoogleLogin = async () => {
      try {
@@ -16,7 +31,7 @@ export default function Home() {
           provider: 'google',
           options: {
              scopes: 'https://www.googleapis.com/auth/youtube.readonly',
-             redirectTo: `${window.location.origin}/dashboard/youtube`
+             redirectTo: `${window.location.origin}/auth/callback`
           }
        });
        if (error) throw error;
@@ -25,6 +40,14 @@ export default function Home() {
        setLoading(false);
      }
   };
+
+  if (checking) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#050505]">
+        <Loader2 className="w-8 h-8 text-white/20 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">

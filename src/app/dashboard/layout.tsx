@@ -3,18 +3,24 @@
 import { motion } from "framer-motion";
 import { Book, Image as ImageIcon, MessageCircle, PlaySquare, Settings, CheckSquare, Heart } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [anniversary, setAnniversary] = useState<string>("");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchAnniversary = async () => {
+    const fetchUserData = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        router.push('/');
+        return;
+      }
+      setLoading(false);
 
       const { data } = await supabase.from('profiles').select('relationship_start_date').eq('id', user.id).single();
       if (data?.relationship_start_date) {
@@ -28,8 +34,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         setAnniversary(`${years}Y ${months}M ${finalDays}D`);
       }
     };
-    fetchAnniversary();
-  }, []);
+    fetchUserData();
+  }, [router]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#050505]">
+        <Loader2 className="w-8 h-8 text-white/20 animate-spin" />
+      </div>
+    );
+  }
 
   const navItems = [
     { href: "/dashboard/gallery", icon: ImageIcon, label: "Gallery" },

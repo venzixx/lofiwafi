@@ -109,13 +109,6 @@ export default function YoutubePage() {
   const [feed, setFeed] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Fallback Feed
-  const fallbackFeed = [
-    { id: "jfKfPfyJRdk", title: "Our Favorite Vibe", url: "https://www.youtube.com/embed/jfKfPfyJRdk" },
-    { id: "dQw4w9WgXcQ", title: "Romantic Getaway", url: "https://www.youtube.com/embed/dQw4w9WgXcQ" },
-    { id: "tgbNymZ7vqY", title: "Funny Moments", url: "https://www.youtube.com/embed/tgbNymZ7vqY" }
-  ];
-
   useEffect(() => {
     const fetchPersonalizedFeed = async () => {
       try {
@@ -123,7 +116,6 @@ export default function YoutubePage() {
         const providerToken = session?.provider_token;
 
         if (providerToken) {
-           // We have a Google OAuth Token! Let's pull their likes
            const res = await fetch('https://www.googleapis.com/youtube/v3/videos?myRating=like&part=snippet&maxResults=20', {
               headers: { Authorization: `Bearer ${providerToken}` }
            });
@@ -146,8 +138,7 @@ export default function YoutubePage() {
         console.error("Failed to personalize feed", err);
       }
       
-      // Fallback to defaults if not logged in with Google or fetch fails
-      setFeed(fallbackFeed);
+      setFeed([]);
       setLoading(false);
     };
 
@@ -161,7 +152,7 @@ export default function YoutubePage() {
         <div className="flex items-center gap-2">
           <MonitorPlay className="w-5 h-5 text-white/80" />
           <h2 className="text-sm font-medium text-white tracking-wide shadow-black drop-shadow-md">
-            {feed.length !== fallbackFeed.length ? "Your YouTube Feed" : "For Us"}
+            Your YouTube Feed
           </h2>
         </div>
       </div>
@@ -170,6 +161,14 @@ export default function YoutubePage() {
         <div className="h-full w-full flex items-center justify-center flex-col gap-4">
            <Loader2 className="w-8 h-8 text-white/40 animate-spin" />
            <p className="text-white/40 text-xs tracking-widest uppercase">Syncing with YouTube...</p>
+        </div>
+      ) : feed.length === 0 ? (
+        <div className="h-full w-full flex items-center justify-center flex-col gap-4 p-8 text-center bg-zinc-900/50">
+           <MonitorPlay className="w-12 h-12 text-white/10" />
+           <p className="text-white/30 text-xs tracking-[0.3em] uppercase leading-relaxed">
+             No liked videos found.<br/>
+             <span className="text-[10px] opacity-50 mt-2 block">Like some YouTube Shorts with this account to see them here!</span>
+           </p>
         </div>
       ) : (
         <div className="h-full w-full overflow-y-scroll snap-y snap-mandatory custom-scrollbar no-scrollbar scroll-smooth">

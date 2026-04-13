@@ -134,6 +134,32 @@ ON public.gallery_images FOR SELECT USING (
 CREATE POLICY "Users can insert gallery images" 
 ON public.gallery_images FOR INSERT WITH CHECK (auth.uid() = user_id);
 
--- 6. Storage Buckets (You may need to create these manually in the dashboard, but here are policies)
--- Create buckets: 'media' 
+-- 6. Profile Sync Trigger
+-- This function automatically creates a profile row when a new user signs up via Google/Email.
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger AS $$
+BEGIN
+  INSERT INTO public.profiles (id, unique_identifier, display_name, avatar_url)
+  VALUES (
+    new.id, 
+    substring(new.id::text from 1 for 8), -- Generates a short unique key from their UUID
+    new.raw_user_meta_data->>'full_name',
+    new.raw_user_meta_data->>'avatar_url'
+  );
+  RETURN new;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Trigger the function every time a user is created in auth.users
+CREATE OR REPLACE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- 7. Storage Buckets (Policies)
 -- Ensure you manually create a bucket named 'media' in the Supabase Storage dashboard.
+-- Policies below assume 'media' bucket exists:
+DROP POLICY IF EXISTS "Public media access" ON storage.objects;
+CREATE POLICY "Public media access" ON storage.objects FOR SELECT USING (bucket_id = 'media');
+
+DROP POLICY IF EXISTS "Authenticated users can upload media" ON storage.objects;
+CREATE POLICY "Authenticated users can upload media" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'media' AND auth.role() = 'authenticated');
