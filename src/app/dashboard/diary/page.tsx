@@ -104,7 +104,18 @@ export default function DiaryPage() {
 
       const { error } = await supabase.from('diary_entries').insert([insertData]);
 
-      if (error) throw error;
+      if (error) {
+        // If the error is about the 'title' column missing, try inserting without it
+        if (error.message.includes("title") || error.code === "PGRST204") {
+          console.warn("Retrying without title column...");
+          const fallbackData = { ...insertData };
+          delete fallbackData.title;
+          const { error: fallbackError } = await supabase.from('diary_entries').insert([fallbackData]);
+          if (fallbackError) throw fallbackError;
+        } else {
+          throw error;
+        }
+      }
 
       setNewTitle("");
       setNewContent("");

@@ -29,22 +29,32 @@ export default function GalleryPage() {
   };
 
   const handleDeletePhoto = async (photo: any) => {
-    if (!confirm("Are you sure you want to delete this memory?")) return;
+    // We already have a CSS-based confirmation or the user clicked deliberately.
+    // Removing browser confirm() to avoid blocking issues.
     
     setDeleting(true);
     try {
-      // 1. Extract file path from URL
-      // URL format: .../storage/v1/object/public/media/gallery/filename.ext
-      const urlParts = photo.url.split('/');
-      const fileName = urlParts[urlParts.length - 1];
-      const filePath = `gallery/${fileName}`;
+      // 1. Extract file path from URL more robustly
+      // URL pattern: .../storage/v1/object/public/media/gallery/filename.ext
+      let filePath = "";
+      if (photo.url.includes('/public/media/')) {
+        filePath = photo.url.split('/public/media/')[1];
+      } else {
+        // Fallback for older formats
+        const urlParts = photo.url.split('/');
+        filePath = `gallery/${urlParts[urlParts.length - 1]}`;
+      }
+
+      console.log("Deleting file at path:", filePath);
 
       // 2. Delete from Storage
       const { error: storageError } = await supabase.storage
         .from('media')
         .remove([filePath]);
 
-      if (storageError) console.error("Storage delete error:", storageError);
+      if (storageError) {
+        console.warn("Storage delete warning (continuing to DB):", storageError.message);
+      }
 
       // 3. Delete from DB
       const { error: dbError } = await supabase
@@ -56,9 +66,9 @@ export default function GalleryPage() {
 
       setSelectedPhoto(null);
       fetchPhotos();
-    } catch (err) {
-      console.error(err);
-      alert("Failed to delete photo.");
+    } catch (err: any) {
+      console.error("Delete error:", err);
+      alert("Failed to delete photo: " + (err.message || "Unknown error"));
     } finally {
       setDeleting(false);
     }
