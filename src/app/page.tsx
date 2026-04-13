@@ -16,7 +16,9 @@ function HomeContent() {
   useEffect(() => {
     const urlError = searchParams.get('error_description') || searchParams.get('error');
     if (urlError) {
-      setError(urlError === 'auth_exchange_failed' ? "Failed to verify session. Try again." : urlError);
+      setError(urlError === 'auth_exchange_failed' ? "Session setup failed. Try to login again." : urlError);
+      // Clean the URL to prevent "stale" errors from sticking around
+      window.history.replaceState({}, document.title, window.location.pathname);
     }
 
     const checkUser = async () => {

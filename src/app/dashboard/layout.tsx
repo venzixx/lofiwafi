@@ -20,15 +20,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         router.push('/');
         return;
       }
-      // Failsafe: Ensure profile exists
-      const { data: profileExists } = await supabase.from('profiles').select('id').eq('id', user.id).single();
-      if (!profileExists) {
-        await supabase.from('profiles').insert([{ 
-          id: user.id, 
-          email: user.email,
-          display_name: user.user_metadata.full_name || user.email?.split('@')[0],
-          unique_identifier: `OURS-${user.id.substring(0, 4).toUpperCase()}`
-        }]);
+      // Failsafe: Ensure profile exists with robust UPSERT
+      const { error: profileError } = await supabase.from('profiles').upsert([{ 
+        id: user.id, 
+        email: user.email,
+        display_name: user.user_metadata.full_name || user.email?.split('@')[0],
+        unique_identifier: `OURS-${user.id.split('-')[0].toUpperCase()}` // More unique (8-ish chars)
+      }], { onConflict: 'id' });
+
+      if (profileError) {
+        console.error("Profile Failsafe Error:", profileError);
       }
 
       const { data } = await supabase.from('profiles').select('relationship_start_date').eq('id', user.id).single();
