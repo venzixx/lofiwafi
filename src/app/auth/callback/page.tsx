@@ -32,12 +32,19 @@ function AuthCallbackContent() {
         
         if (session) {
           console.log("Session verified, redirecting...");
+          // Temporarily store the Google token for YouTube feed (survives refreshes)
+          if (session.provider_token) {
+            sessionStorage.setItem('google_yt_token', session.provider_token);
+          }
           router.push("/dashboard/youtube");
         } else {
           // If zero results after 2 seconds, then show error
           setTimeout(async () => {
              const { data: { session: retrySession } } = await supabase.auth.getSession();
              if (retrySession) {
+                if (retrySession.provider_token) {
+                  sessionStorage.setItem('google_yt_token', retrySession.provider_token);
+                }
                 router.push("/dashboard/youtube");
              } else {
                 setError("Authentication state not found. Please try logging in again.");

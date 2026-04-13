@@ -109,11 +109,37 @@ export default function YoutubePage() {
   const [feed, setFeed] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const handleSyncYouTube = async () => {
+    setLoading(true);
+    try {
+      // Re-trigger OAuth with focus on YouTube permissions
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          scopes: 'https://www.googleapis.com/auth/youtube.readonly',
+          redirectTo: `${window.location.origin}/auth/callback`,
+          queryParams: {
+            prompt: 'consent', // Force the permissions screen
+            access_type: 'offline'
+          }
+        }
+      });
+      if (error) throw error;
+    } catch (err: any) {
+      console.error(err);
+      alert("Sync failed: " + err.message);
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     const fetchPersonalizedFeed = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        const providerToken = session?.provider_token;
+        
+        // Try to get token from session (fresh login) OR from storage (survives refresh)
+        const providerToken = session?.provider_token || sessionStorage.getItem('google_yt_token');
+        console.log("YouTube Token Status:", providerToken ? "Active" : "Missing");
 
         if (providerToken) {
            const res = await fetch('https://www.googleapis.com/youtube/v3/videos?myRating=like&part=snippet&maxResults=20', {
@@ -127,11 +153,17 @@ export default function YoutubePage() {
                  title: item.snippet.title,
                  url: `https://www.youtube.com/embed/${item.id}`
               }));
+
               if (ytVideos.length > 0) {
                  setFeed(ytVideos);
                  setLoading(false);
                  return;
+              } else {
+                 console.log("YouTube API returned 0 items. User might have private likes.");
               }
+           } else {
+              const errorData = await res.json();
+              console.error("YouTube API Error:", errorData);
            }
         }
       } catch (err) {
@@ -163,12 +195,24 @@ export default function YoutubePage() {
            <p className="text-white/40 text-xs tracking-widest uppercase">Syncing with YouTube...</p>
         </div>
       ) : feed.length === 0 ? (
-        <div className="h-full w-full flex items-center justify-center flex-col gap-4 p-8 text-center bg-zinc-900/50">
-           <MonitorPlay className="w-12 h-12 text-white/10" />
-           <p className="text-white/30 text-xs tracking-[0.3em] uppercase leading-relaxed">
-             No liked videos found.<br/>
-             <span className="text-[10px] opacity-50 mt-2 block">Like some YouTube Shorts with this account to see them here!</span>
-           </p>
+        <div className="h-full w-full flex items-center justify-center flex-col gap-6 p-8 text-center bg-zinc-900/50">
+           <div className="w-20 h-20 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
+              <MonitorPlay className="w-10 h-10 text-white/20" />
+           </div>
+           <div className="space-y-4 max-w-xs">
+              <p className="text-white/30 text-xs tracking-[0.2em] uppercase leading-relaxed">
+                Unable to load your liked videos or the list is empty.
+              </p>
+              <button 
+                onClick={handleSyncYouTube}
+                className="w-full px-6 py-3 bg-white hover:bg-rose-50 text-black text-[10px] font-bold uppercase tracking-[0.2em] rounded-xl transition-all active:scale-95 shadow-xl shadow-rose-500/10"
+              >
+                Sync with YouTube
+              </button>
+              <p className="text-[9px] text-white/20 italic lowercase">
+                Make sure to check "View your YouTube account" on the Google screen
+              </p>
+           </div>
         </div>
       ) : (
         <div className="h-full w-full overflow-y-scroll snap-y snap-mandatory custom-scrollbar no-scrollbar scroll-smooth">
