@@ -193,16 +193,22 @@ export default function GalleryPage() {
             className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-12 bg-black/95 backdrop-blur-3xl"
             onClick={() => setSelectedPhoto(null)}
           >
-            <div className="absolute top-8 right-8 z-[210] flex gap-4" onClick={(e) => e.stopPropagation()}>
+            <div className="absolute top-8 right-8 z-[250] flex gap-4" onClick={(e) => e.stopPropagation()}>
                <button 
-                 onClick={() => handleDeletePhoto(selectedPhoto)}
+                 onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeletePhoto(selectedPhoto);
+                 }}
                  disabled={deleting}
                  className="p-3 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-full transition-all active:scale-95 disabled:opacity-50"
                >
                  {deleting ? <Loader2 className="w-6 h-6 animate-spin" /> : <Trash2 className="w-6 h-6" />}
                </button>
                <button 
-                 onClick={() => setSelectedPhoto(null)}
+                 onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedPhoto(null);
+                 }}
                  className="p-3 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white rounded-full transition-all"
                >
                  <X className="w-6 h-6" />
