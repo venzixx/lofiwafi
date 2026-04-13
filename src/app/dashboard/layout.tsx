@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Book, Image as ImageIcon, MessageCircle, PlaySquare, Settings, CheckSquare, Heart } from "lucide-react";
+import { Book, Image as ImageIcon, MessageCircle, PlaySquare, Settings, CheckSquare, Heart, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
