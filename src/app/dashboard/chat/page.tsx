@@ -169,7 +169,10 @@ export default function ChatPage() {
 
                 {isMe && (
                   <button 
-                    onClick={() => handleDeleteMessage(msg.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteMessage(msg.id);
+                    }}
                     className="absolute top-2 right-2 p-1.5 bg-black/40 text-white/20 hover:text-rose-500 rounded-lg opacity-0 group-hover:opacity-100 transition-all backdrop-blur-sm border border-white/5"
                   >
                     <Trash2 className="w-3.5 h-3.5" />

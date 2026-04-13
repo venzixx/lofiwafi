@@ -183,7 +183,7 @@ export default function GalleryPage() {
             className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-12 bg-black/95 backdrop-blur-3xl"
             onClick={() => setSelectedPhoto(null)}
           >
-            <div className="absolute top-8 right-8 z-[210] flex gap-4">
+            <div className="absolute top-8 right-8 z-[210] flex gap-4" onClick={(e) => e.stopPropagation()}>
                <button 
                  onClick={() => handleDeletePhoto(selectedPhoto)}
                  disabled={deleting}

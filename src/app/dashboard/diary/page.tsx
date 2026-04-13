@@ -14,6 +14,7 @@ export default function DiaryPage() {
   // New entry form state
   const [newTitle, setNewTitle] = useState("");
   const [newContent, setNewContent] = useState("");
+  const [entryDate, setEntryDate] = useState("");
   const [isShared, setIsShared] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
@@ -59,7 +60,7 @@ export default function DiaryPage() {
     if (!error) {
       setEntries((prev) => prev.filter((entry) => entry.id !== id));
     } else {
-      alert("Failed to delete entry.");
+      alert("Failed to delete entry: " + error.message);
     }
     setIsDeleting(null);
   };
@@ -85,24 +86,37 @@ export default function DiaryPage() {
     if (!newTitle || !newContent) return;
     
     setIsSubmitting(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not logged in");
 
-    const { error } = await supabase.from('diary_entries').insert([{
-      user_id: user.id,
-      title: newTitle, // Adding title to schema mentally, wait schema didn't have title. 
-      // I should update schema to include title.
-      content: newContent,
-      is_shared: isShared
-    }]);
+      const insertData: any = {
+        user_id: user.id,
+        title: newTitle,
+        content: newContent,
+        is_shared: isShared
+      };
 
-    if (!error) {
+      // If user provided a custom date, use it; otherwise Supabase uses current time
+      if (entryDate) {
+        insertData.created_at = new Date(entryDate).toISOString();
+      }
+
+      const { error } = await supabase.from('diary_entries').insert([insertData]);
+
+      if (error) throw error;
+
       setNewTitle("");
       setNewContent("");
+      setEntryDate("");
       setIsModalOpen(false);
       fetchData();
+    } catch (err: any) {
+      console.error(err);
+      alert("Failed to save entry: " + (err.message || "Unknown error"));
+    } finally {
+      setIsSubmitting(false);
     }
-    setIsSubmitting(false);
   };
 
   return (
@@ -220,14 +234,25 @@ export default function DiaryPage() {
               </div>
 
               <form onSubmit={handleCreateEntry} className="space-y-6">
-                <div className="space-y-2">
-                  <label className="text-[10px] text-white/30 tracking-[0.3em] uppercase ml-1">Title</label>
-                  <input 
-                    value={newTitle}
-                    onChange={(e) => setNewTitle(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 p-4 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-rose-500/20 transition-all font-light"
-                    placeholder="Reflecting on today..."
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] text-white/30 tracking-[0.3em] uppercase ml-1">Title</label>
+                    <input 
+                      value={newTitle}
+                      onChange={(e) => setNewTitle(e.target.value)}
+                      className="w-full bg-white/5 border border-white/10 p-4 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-rose-500/20 transition-all font-light"
+                      placeholder="Title..."
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] text-white/30 tracking-[0.3em] uppercase ml-1">Date (Optional)</label>
+                    <input 
+                      type="date"
+                      value={entryDate}
+                      onChange={(e) => setEntryDate(e.target.value)}
+                      className="w-full bg-white/5 border border-white/10 p-4 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-rose-500/20 transition-all font-light [&::-webkit-calendar-picker-indicator]:invert"
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-2">
