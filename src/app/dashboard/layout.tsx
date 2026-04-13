@@ -26,7 +26,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         await supabase.from('profiles').insert([{ 
           id: user.id, 
           email: user.email,
-          display_name: user.user_metadata.full_name || user.email?.split('@')[0]
+          display_name: user.user_metadata.full_name || user.email?.split('@')[0],
+          unique_identifier: `OURS-${user.id.substring(0, 4).toUpperCase()}`
         }]);
       }
 

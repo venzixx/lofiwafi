@@ -33,6 +33,10 @@ export default function SettingsPage() {
         
       if (!error && data) {
         setProfile(data);
+      } else {
+        // Retry/Create logic if the global layout failsafe hasn't finished
+        const { data: retryData } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+        if (retryData) setProfile(retryData);
       }
       setLoading(false);
     }
